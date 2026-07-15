@@ -43,19 +43,6 @@ DimHand 是首个在**动态弱光条件**下捕捉连续运动的**大规模 3D
 
 ---
 
-## 🧠 DimNet Framework | 方法框架
-
-DimNet is an end-to-end framework featuring:
-
-- **(a) IAE** — Illumination Adaptation Enhancer 🌅
-- **(b) KPC** — Kinematic Prior Codebook 📚
-- **(c) SSP** — Spatial-Semantic Projection 🗺️
-- **(d) Iterative Refinement** — Progressive structural correction 🔄
-
-Outperforms state-of-the-art methods (WiLoR, HaMeR) on low-light hand pose estimation. 🏆
-
----
-
 ## 📊 Website Sections | 网页内容导览
 
 Our project website [https://hanlingzhan.github.io/DimHand/](https://hanlingzhan.github.io/DimHand/) includes:
