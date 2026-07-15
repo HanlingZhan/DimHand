@@ -91,10 +91,10 @@ bibtex
 
 ```
 @inproceedings{zhan2026dimhand,
-title={DimHand: A Large-Scale Benchmark for Hand Pose Estimation under Dynamic Low-Light Conditions},
-author={Zhan, Hanling and Ren, Pengfei and Zhang, Haoyang and Wang, Xinyi and Xie, Liang and Yin, Erwei},
-booktitle={Proceedings of the 34th ACM International Conference on Multimedia (MM '26)},
-year={2026}
+  title={DimHand: A Large-Scale Benchmark for Hand Pose Estimation under Dynamic Low-Light Conditions},
+  author={Zhan, Hanling and Ren, Pengfei and Zhang, Haoyang and Wang, Xinyi and Xie, Liang and Yin, Erwei},
+  booktitle={Proceedings of the 34th ACM International Conference on Multimedia (MM '26)},
+  year={2026}
 }
 ```
 
