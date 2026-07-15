@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DimHand: A Large-Scale Benchmark for Hand Pose Estimation under Dynamic Low-Light Conditions</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',        // 主色调：深蓝色
+                        secondary: '#3B82F6',      // 辅助色：浅蓝色
+                        accent: '#F97316',         // 强调色：橙色
+                        dark: '#1E293B',           // 深色：深灰
+                        light: '#F8FAFC',          // 浅色：接近白色
+                        neutral: '#64748B',        // 中性色：中灰
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .hover-scale {
+                transition: transform 0.3s ease;
+            }
+            .hover-scale:hover {
+                transform: scale(1.03);
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.8s ease-in-out;
+            }
+            .animate-slide-up {
+                animation: slideUp 0.8s ease-out;
+            }
+            .pill-button {
+                @apply px-6 py-2.5 bg-dark hover:bg-accent text-white rounded-full shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center text-sm;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-light text-dark antialiased text-lg">
+    
+    <!-- 固定导航栏 -->
+    <nav id="navbar" class="fixed w-full bg-white/90 backdrop-blur-md z-50 transition-all duration-300 shadow-sm">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl"><i class="fa fa-hand-paper-o text-primary"></i></span>
+                <span class="font-bold text-xl text-primary">DimHand</span>
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <a href="#abstract" class="font-medium hover:text-primary transition-colors"><i class="fa fa-file-text-o mr-1"></i> Abstract</a>
+                <a href="#video" class="font-medium hover:text-primary transition-colors"><i class="fa fa-play mr-1"></i> Video</a>
+                <a href="#method" class="font-medium hover:text-primary transition-colors"><i class="fa fa-bar-chart mr-1"></i> Benchmark</a>
+                <a href="#dataset-details" class="font-medium hover:text-primary transition-colors"><i class="fa fa-flask mr-1"></i> Experiments</a>
+                <a href="#gestures" class="font-medium hover:text-primary transition-colors"><i class="fa fa-hand-peace-o mr-1"></i> Gestures</a>
+                <a href="#directory" class="font-medium hover:text-primary transition-colors"><i class="fa fa-sitemap mr-1"></i> Directory</a>
+            </div>
+            <div class="md:hidden">
+                <button id="menu-toggle" class="text-dark focus:outline-none">
+                    <i class="fa fa-bars text-primary text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white shadow-lg animate-fade-in">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <a href="#abstract" class="font-medium py-2 hover:text-primary transition-colors"><i class="fa fa-file-text-o mr-2"></i> Abstract</a>
+                <a href="#video" class="font-medium py-2 hover:text-primary transition-colors"><i class="fa fa-play mr-2"></i> Video</a>
+                <a href="#method" class="font-medium py-2 hover:text-primary transition-colors"><i class="fa fa-bar-chart mr-2"></i> Benchmark</a>
+                <a href="#dataset-details" class="font-medium py-2 hover:text-primary transition-colors"><i class="fa fa-flask mr-2"></i> Experiments</a>
+                <a href="#gestures" class="font-medium py-2 hover:text-primary transition-colors"><i class="fa fa-hand-peace-o mr-2"></i> Gestures</a>
+                <a href="#directory" class="font-medium py-2 hover:text-primary transition-colors"><i class="fa fa-sitemap mr-2"></i> Directory</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区域 - 标题和作者信息 -->
+    <header class="pt-24 pb-16 md:pt-32 md:pb-24 bg-gradient-to-br from-primary/5 to-light">
+        <div class="container mx-auto px-4">
+            <div class="max-w-7xl mx-auto text-center">
+                <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold leading-tight text-dark mb-6 animate-fade-in">
+                    DimHand: A Large-Scale Benchmark for<br>Hand Pose Estimation under <br> Dynamic Low-Light Conditions
+                </h1>
+                
+                <!-- 作者信息 -->
+                <div class="mb-8 animate-slide-up">
+                    <table align="center" class="text-lg">
+                        <tr>
+                            <td align="center">
+                                <a href="https://orcid.org/0009-0009-4763-9411" class="font-medium text-xl hover:text-primary transition-colors">Hanling Zhan<sup>1</sup></a> &nbsp;&nbsp;
+                                <a href="https://cv.nirc.top/people/" target="_blank" class="font-medium text-xl hover:text-primary transition-colors">Pengfei Ren<sup>2*</sup></a> &nbsp;&nbsp;
+                                <a href="https://orcid.org/0000-0002-9253-5824" class="font-medium text-xl hover:text-primary transition-colors">Haoyang Zhang<sup>3</sup></a> &nbsp;&nbsp;
+                                <a href="https://orcid.org/0009-0002-3010-1032" class="font-medium text-xl hover:text-primary transition-colors">Xinyi Wang<sup>1</sup></a> &nbsp;&nbsp;
+                                <a href="https://orcid.org/0000-0002-8286-6785" class="font-medium text-xl hover:text-primary transition-colors">Liang Xie<sup>3</sup></a> &nbsp;&nbsp;
+                                <a href="https://orcid.org/0000-0002-2147-9888" class="font-medium text-xl hover:text-primary transition-colors">Erwei Yin<sup>3*</sup></a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" class="text-base text-gray-600">
+                                <sup>1</sup>Shanghai Jiao Tong University &nbsp;&nbsp;
+                                <sup>2</sup>Beijing University of Posts and Telecommunications &nbsp;&nbsp;
+                                <sup>3</sup>Defense Innovation Institute, Academy of Military Sciences
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" class="text-sm text-gray-500 mt-1">
+                                <sup>*</sup>Corresponding author
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- 会议信息 -->
+                <p class="text-primary font-bold text-xl mb-4 animate-slide-up">ACM MM 2026</p>
+
+                <!-- 下载按钮 -->
+                <div class="flex flex-wrap justify-center gap-4 animate-slide-up" style="animation-delay: 0.4s;">
+                    <a href="#" class="pill-button">
+                        <i class="fa fa-file-pdf-o text-white mr-2"></i> Paper
+                    </a>
+                    <a href="#" class="pill-button">
+                        <i class="fa fa-github text-white mr-2"></i> Code
+                    </a>
+                    <a href="#" class="pill-button" onclick="openApplicationForm()">
+                        <i class="fa fa-database text-white mr-2"></i> Dataset
+                    </a>
+                    <a href="#" class="pill-button">
+                        <i class="fa fa-file-pdf-o text-white mr-2"></i> Supplementary Material
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    
+
+
+
+    <!-- 新增：Table 1 - 数据集对比表 -->
+    <section id="comparison-table" class="py-12 scroll-mt-24 bg-white">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-8 text-center">Comparison with Existing Datasets</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white rounded-xl shadow-lg overflow-hidden">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-3 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Dataset</th>
+                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Accessible</th>
+                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Modality</th>
+                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Temporal ⏰</th>
+                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Illumination 💡</th>
+                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
+                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Subjects</th>
+                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Frames</th>
+                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Annotation Method</th>
+                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Joint</th>
+                            <th class="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">MANO</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 text-sm">
+                        <!-- Low-light Human Pose Datasets header -->
+                        <tr class="bg-gray-50">
+                            <td colspan="11" class="px-3 py-2 font-semibold text-gray-600 text-center">Low-light Human Pose Datasets</td>
+                        </tr>
+                        <!-- UIRE-Net -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-3 py-2 whitespace-nowrap">UIRE-Net</td>
+                            <td class="px-3 py-2 text-center text-red-500">✘</td>
+                            <td class="px-3 py-2 text-center">RGB</td>
+                            <td class="px-3 py-2 text-center">Static</td>
+                            <td class="px-3 py-2 text-center">Natural</td>
+                            <td class="px-3 py-2 text-center">Real</td>
+                            <td class="px-3 py-2 text-center">-</td>
+                            <td class="px-3 py-2 text-center">100</td>
+                            <td class="px-3 py-2 text-center">Manual</td>
+                            <td class="px-3 py-2 text-center text-green-600">✔</td>
+                            <td class="px-3 py-2 text-center text-red-500">✘</td>
+                        </tr>
+                        <!-- ExLPose -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-3 py-2 whitespace-nowrap">ExLPose</td>
+                            <td class="px-3 py-2 text-center text-green-600">✔</td>
+                            <td class="px-3 py-2 text-center">RGB</td>
+                            <td class="px-3 py-2 text-center">Static</td>
+                            <td class="px-3 py-2 text-center">ND filter</td>
+                            <td class="px-3 py-2 text-center">Real+Syn.</td>
+                            <td class="px-3 py-2 text-center">-</td>
+                            <td class="px-3 py-2 text-center">2556</td>
+                            <td class="px-3 py-2 text-center">Manual</td>
+                            <td class="px-3 py-2 text-center text-green-600">✔</td>
+                            <td class="px-3 py-2 text-center text-red-500">✘</td>
+                        </tr>
+                        <!-- ExLPose-OCN -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-3 py-2 whitespace-nowrap">ExLPose-OCN</td>
+                            <td class="px-3 py-2 text-center text-green-600">✔</td>
+                            <td class="px-3 py-2 text-center">RGB</td>
+                            <td class="px-3 py-2 text-center">Static</td>
+                            <td class="px-3 py-2 text-center">Natural</td>
+                            <td class="px-3 py-2 text-center">Real</td>
+                            <td class="px-3 py-2 text-center">-</td>
+                            <td class="px-3 py-2 text-center">360</td>
+                            <td class="px-3 py-2 text-center">Manual</td>
+                            <td class="px-3 py-2 text-center text-green-600">✔</td>
+                            <td class="px-3 py-2 text-center text-red-500">✘</td>
+                        </tr>
+                        <!-- LLIP -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-3 py-2 whitespace-nowrap">LLIP</td>
+                            <td class="px-3 py-2 text-center text-green-600">✔</td>
+                            <td class="px-3 py-2 text-center">RGB+MoCap</td>
+                            <td class="px-3 py-2 text-center">Sequential</td>
+                            <td class="px-3 py-2 text-center">Mean Pixel Intensity</td>
+                            <td class="px-3 py-2 text-center">Real</td>
+                            <td class="px-3 py-2 text-center">8 (5♂ 3♀)</td>
+                            <td class="px-3 py-2 text-center">17.1K</td>
+                            <td class="px-3 py-2 text-center">Marker</td>
+                            <td class="px-3 py-2 text-center text-green-600">✔</td>
+                            <td class="px-3 py-2 text-center text-red-500">✘</td>
+                        </tr>
+                        <!-- Low-light Hand Pose Datasets header -->
+                        <tr class="bg-gray-50">
+                            <td colspan="11" class="px-3 py-2 font-semibold text-gray-600 text-center">Low-light Hand Pose Datasets</td>
+                        </tr>
+                        <!-- LLHands -->
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-3 py-2 whitespace-nowrap">LLHands</td>
+                            <td class="px-3 py-2 text-center text-red-500">✘</td>
+                            <td class="px-3 py-2 text-center">RGB</td>
+                            <td class="px-3 py-2 text-center">Static</td>
+                            <td class="px-3 py-2 text-center">0.5, 1, 2 lux</td>
+                            <td class="px-3 py-2 text-center">Real</td>
+                            <td class="px-3 py-2 text-center">10</td>
+                            <td class="px-3 py-2 text-center">120K</td>
+                            <td class="px-3 py-2 text-center">Automatic</td>
+                            <td class="px-3 py-2 text-center text-green-600">✔</td>
+                            <td class="px-3 py-2 text-center text-red-500">✘</td>
+                        </tr>
+                        <!-- DimHand (highlighted) -->
+                        <tr class="bg-blue-50 hover:bg-blue-100 font-semibold">
+                            <td class="px-3 py-2 whitespace-nowrap text-primary">DimHand</td>
+                            <td class="px-3 py-2 text-center text-green-600">✔</td>
+                            <td class="px-3 py-2 text-center">RGB+Depth</td>
+                            <td class="px-3 py-2 text-center font-bold text-primary">Sequential</td>
+                            <td class="px-3 py-2 text-center font-bold text-primary">0.1-10 lux</td>
+                            <td class="px-3 py-2 text-center">Real</td>
+                            <td class="px-3 py-2 text-center font-bold whitespace-nowrap">15 (9♂ 6♀)</td>
+                            <td class="px-3 py-2 text-center font-bold">745K</td>
+                            <td class="px-3 py-2 text-center">Semi-Auto</td>
+                            <td class="px-3 py-2 text-center text-green-600">✔</td>
+                            <td class="px-3 py-2 text-center text-green-600">✔</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-4 text-center text-gray-500 italic text-sm">ND: neutral-density; MoCap: motion capture</p>
+        </div>
+    </section>
+
+
+    <!-- 视频部分 -->
+    <section id="video" class="py-12 scroll-mt-24 bg-gray-50">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-8 text-center">Project Video</h2>
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <video controls loop muted playsinline preload="auto" class="w-full h-auto" poster="teaser.png">
+                    <source src="Demo_2049.mp4" type="video/mp4">
+                    <source src="Demo_2049.webm" type="video/webm">
+                    <source src="Demo_2049.ogg" type="video/ogg">
+                    Your browser does not support the video tag. Please download the video 
+                    <a href="Demo_2049.mp4" class="text-primary underline">here</a>.
+                </video>
+            </div>
+            <p class="mt-4 text-center text-gray-600 italic">Project overview video demonstrating DimHand dataset and DimNet framework</p>
+        </div>
+    </section>
+
+    <!-- 摘要部分 -->
+    <section id="abstract" class="py-12 scroll-mt-24 bg-white">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-8 text-center">Abstract</h2>
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <p class="text-lg text-gray-700 leading-relaxed text-justify">
+                    RGB-based 3D hand pose estimation (HPE) in dynamic real-world environments is a foundational technology
+                    for human-computer interaction. Although current methods achieve remarkable performance under controlled
+                    conditions, they remain <strong>sensitive to extremely low-light conditions</strong>. Specifically, it involves low
+                    signal-to-noise ratios and missing visual cues, making it difficult to acquire precise 3D motion
+                    annotations from RGB. As a compromise, existing low-light datasets capture static poses, failing to
+                    reflect real-world complex dynamic motions. To this end, we develop a <strong>multi-modal, multi-view capture
+                    system with adjustable illumination</strong> and a <strong>high-fidelity illumination-invariance automated annotation
+                    pipeline</strong>, decoupling 3D annotation from adverse lighting, preserving photometric realism and illumination
+                    variations. Based on this pipeline, we propose <strong class="text-primary">DimHand</strong>, the <strong>first large-scale 3D hand pose dataset
+                    capturing continuous motion under dynamic low-light conditions</strong>, comprising <strong>745,280 frames</strong> from <strong>15 subjects</strong>
+                    performing <strong>15 distinct sequential actions</strong> across <strong>5 viewpoints</strong> with illumination ranging from <strong>0.1 to 10 lux</strong>.
+                    However, the coupling between severe visual degradation and the intrinsic complexity of hand structure
+                    induces spatial and semantic ambiguity. To address these challenges, we propose <strong class="text-primary">DimNet</strong>, an end-to-end
+                    framework that leverages <strong>3D structural priors via a Kinematic Prior Codebook (KPC)</strong> for structural
+                    regularization and a <strong>Spatial-Semantic Projection (SSP)</strong> for local semantic refinement. Extensive experiments
+                    demonstrate that <strong>DimNet outperforms state-of-the-art methods</strong>, particularly in generalizing to unseen
+                    dynamic hand motions, thereby establishing a <strong>strong low-light baseline for 3D HPE</strong>.
+                </p>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Teaser + Pipeline 并排 -->
+    <!-- ★★★ 调节左右宽度比例：修改下方 lg:grid-cols-5 和 col-span 的数字即可 ★★★ -->
+    <!-- 当前为 2:3 比例（Teaser占2份，Dataset占3份），如要改回1:1则用 lg:grid-cols-2 + 两边都去掉 col-span -->
+    <section class="py-12 bg-white">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <!-- 左侧：Teaser（占 2/5 宽度） -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden lg:col-span-2">
+                    <img src="teaser.png" 
+                        alt="DimHand Dataset Overview - Comparison of 3D hand datasets" 
+                        class="w-full h-auto object-cover">
+                    <div class="p-4">
+                        <p class="text-gray-700 text-sm text-justify leading-relaxed">
+                            DimHand is the first large-scale 3D hand pose dataset capturing continuous motion under dynamic low-light conditions,
+                            comprising <strong>745,280 frames</strong> from <strong>15 subjects</strong> performing <strong>15 distinct sequential actions</strong> 
+                            across <strong>5 viewpoints</strong> with illumination ranging from <strong>0.1 to 10 lux</strong>.
+                        </p>
+                    </div>
+                </div>
+                <!-- 右侧：Pipeline（占 3/5 宽度） -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden lg:col-span-3">
+                    <img src="dataset.png" 
+                        alt="Data acquisition and annotation pipeline" 
+                        class="w-full h-auto object-cover">
+                    <div class="p-4">
+                        <p class="text-gray-700 text-sm text-justify">
+                            <strong>Data acquisition and annotation pipeline.</strong> We utilize five synchronized RGB-D cameras and an adjustable 
+                            illumination capture system to capture multi-modal data. High-precision annotations are automatically 
+                            generated through a multi-view depth-guided pose estimation framework.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- 数据集概览图片 -->
+    <!-- <section class="py-8 bg-white">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-fade-in">
+                <img src="teaser.png" 
+                    alt="DimHand Dataset Overview - Comparison of 3D hand datasets" 
+                    class="w-full h-auto object-cover">
+            </div>
+            <p class="mt-6 text-lg text-gray-700 text-justify leading-relaxed animate-fade-in" style="animation-delay: 0.6s;">
+                DimHand is the first large-scale 3D hand pose dataset capturing continuous motion under dynamic low-light conditions,
+                comprising <strong>745,280 frames</strong> from <strong>15 subjects</strong> performing <strong>15 distinct sequential actions</strong> 
+                across <strong>5 viewpoints</strong> with illumination ranging from <strong>0.1 to 10 lux</strong>.
+                It provides accurate 3D joint and MANO annotations, enabling robust research in low-light hand pose estimation.
+            </p>
+        </div>
+    </section> -->
+
+    <!-- Figure 2: Data Acquisition Pipeline -->
+    <!-- <section id="pipeline" class="py-12 scroll-mt-24 bg-white">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-8 text-center">Data Acquisition and Annotation Pipeline</h2>
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <img src="dataset.png" 
+                    alt="Data acquisition and annotation pipeline" 
+                    class="w-full h-auto object-cover">
+            </div>
+            <p class="mt-4 text-gray-700 text-lg text-justify">
+                Data acquisition and annotation pipeline. We utilize five synchronized RGB-D cameras and an adjustable 
+                illumination capture system to capture multi-modal data. High-precision annotations are automatically 
+                generated through a multi-view depth-guided pose estimation framework, ensuring temporal consistency 
+                and spatial accuracy.
+            </p>
+        </div>
+    </section> -->
+
+
+
+
+    <!-- 方法概述部分 -->
+    <section id="method" class="py-12 scroll-mt-24 bg-gray-50">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-8 text-center">Benchmark</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <!-- 左侧：方法描述文字 -->
+                <div class="lg:col-span-2 flex flex-col justify-center space-y-5">
+                    <div class="bg-white rounded-xl shadow-lg p-6 h-full">
+                        <h3 class="text-lg font-semibold text-primary mb-4">DimNet Architecture</h3>
+                        <ul class="space-y-3 text-gray-700 text-sm leading-relaxed">
+                            <li class="flex items-start">
+                                <span class="font-bold text-primary mr-2 mt-0.5 shrink-0">(a)</span>
+                                <span><strong>IAE</strong> — Illumination Adaptation Enhancer performs task-specific restoration to recover fundamental visual signals from degraded low-light inputs.</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="font-bold text-primary mr-2 mt-0.5 shrink-0">(b)</span>
+                                <span><strong>KPC</strong> — Kinematic Prior Codebook anchors ambiguous visual features into a structured kinematic manifold for global structural constraints.</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="font-bold text-primary mr-2 mt-0.5 shrink-0">(c)</span>
+                                <span><strong>SSP</strong> — Spatial-Semantic Projection establishes 2D–3D spatial correspondence by selectively sampling within geometrically valid regions.</span>
+                            </li>
+                            <!-- <li class="flex items-start">
+                                <span class="font-bold text-primary mr-2 mt-0.5 shrink-0">(d)</span>
+                                <span><strong>Iterative Refinement</strong> progressively rectifies structural inconsistencies across iterations for robust 3D hand pose reconstruction.</span>
+                            </li> -->
+                        </ul>
+                    </div>
+                </div>
+                <!-- 右侧：方法图 -->
+                <div class="lg:col-span-3">
+                    <div class="bg-white rounded-xl shadow-lg p-4 overflow-hidden h-full flex items-center">
+                        <img src="method.png"
+                            alt="DimNet Architecture Diagram"
+                            class="w-full h-auto object-contain rounded-lg hover-scale">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dataset & Experiment Details -->
+    <section id="dataset-details" class="py-12 scroll-mt-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-10 text-center">Dataset & Experiment Details</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <!-- 左侧列：Subject ID表格 + Fig_sub_hand（占 2/5 宽度） -->
+                <div class="space-y-4 lg:col-span-2">
+                    <!-- Subject Information 表格 -->
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="bg-gray-50">
+                                        <th class="px-4 py-2.5 text-left" style="width: 60%;">Subject ID</th>
+                                        <th class="px-4 py-2.5 text-left" style="width: 40%;">Gender</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200" id="subjectTable">
+                                    <!-- 动态生成的内容 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Fig_sub_hand.png -->
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                        <div class="p-4">
+                            <img src="Fig_sub_hand.png" alt="Hand morphological diversity across 15 subjects" class="w-full h-auto rounded-lg">
+                            <p class="mt-3 text-gray-700 text-sm text-justify leading-relaxed">
+                                <strong>Visual comparison of hand morphological diversity</strong> across 15 subjects in the DimHand dataset,
+                                illustrating the variance in hand shape, overall size, and the natural bending states of the fingers.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧列：Fig_sota.png 长图（占 3/5 宽度） -->
+                <div class="lg:col-span-3">
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden h-full flex flex-col">
+                        <div class="flex-grow flex items-center justify-center p-4">
+                            <img src="Fig_sota.png" alt="Extended qualitative comparisons on DimHand" class="w-full h-auto rounded-lg">
+                        </div>
+                        <div class="p-4 border-t border-gray-100">
+                            <p class="text-gray-700 text-sm text-justify leading-relaxed">
+                                <strong>Qualitative comparisons on the DimHand dataset.</strong> From left to right: (1) RGB input, (2) WiLoR on input, (3) HaMeR on input, (4) DimNet (Ours), (5) HVI-enhanced image, (6) WiLoR applied to the HVI-enhanced image, (7) HaMeR applied to the HVI-enhanced image, and (8) GT on enhanced image.
+                                We evaluate the proposed DimNet against state-of-the-art
+                                baselines including WiLoR and HaMeR. The notation HVI enh. indicates that the low-light images are preprocessed
+                                using the HVI low-light enhancement network, yielding the HVI+WiLoR and HVI+HaMeR pipelines. While DimNet consistently
+                                maintains robust structural integrity, the baseline methods suffer from severe estimation failures caused by either extreme
+                                dark degradation or the misleading artifacts introduced by the image enhancement process.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- 15 种手势类别表 -->
+    <section id="gestures" class="py-12 scroll-mt-24 bg-white">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-8 text-center">Gesture Classes</h2>
+            <p class="text-center text-gray-600 mb-6">All 15 gesture classes and their corresponding descriptions defined in the DimHand dataset</p>
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-16">ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-48">Name</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">Type</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">00</td>
+                            <td class="px-4 py-2.5 font-medium">Calibration</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">Global</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Open hand rotating and translating freely in all directions</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">01</td>
+                            <td class="px-4 py-2.5 font-medium">Finger Counting</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full">Pose-oriented</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Sequential hand poses representing digits from 0 to 9</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">02</td>
+                            <td class="px-4 py-2.5 font-medium">Finger Bending</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-0.5 rounded-full">Action-driven</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Individual and pairwise joint-by-joint finger bending towards the palm</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">03</td>
+                            <td class="px-4 py-2.5 font-medium">Finger Tapping</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-0.5 rounded-full">Action-driven</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Individual and pairwise finger tapping motions</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">04</td>
+                            <td class="px-4 py-2.5 font-medium">Finger Pinching</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-0.5 rounded-full">Action-driven</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Pairwise, three-finger, and four-finger pinching combinations</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">05</td>
+                            <td class="px-4 py-2.5 font-medium">Thumb Tap Palm</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-0.5 rounded-full">Action-driven</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Thumb sequentially tapping various joints on the palmar side</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">06</td>
+                            <td class="px-4 py-2.5 font-medium">Thumb Tap Back</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-0.5 rounded-full">Action-driven</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Thumb sequentially tapping various joints on the dorsal side</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">07</td>
+                            <td class="px-4 py-2.5 font-medium">Finger Walking</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">Composite</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Staggered finger walking motions simulating piano playing</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">08</td>
+                            <td class="px-4 py-2.5 font-medium">Finger Snapping</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">Composite</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Snapping motions by rubbing the thumb against each finger</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">09</td>
+                            <td class="px-4 py-2.5 font-medium">Thumb Sliding Palm</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">Composite</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Thumb continuously sliding across fingers on the palmar side</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">10</td>
+                            <td class="px-4 py-2.5 font-medium">Thumb Sliding Back</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">Composite</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Thumb continuously sliding across fingers on the dorsal side</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">11</td>
+                            <td class="px-4 py-2.5 font-medium">Finger Wiggling</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-orange-100 text-orange-800 text-xs font-medium px-2 py-0.5 rounded-full">Action-driven</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Continuous horizontal wiggling motions of individual fingers</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">12</td>
+                            <td class="px-4 py-2.5 font-medium">Finger Crossing</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full">Pose-oriented</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Fingers stacking and crossing to create severe self-occlusions</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">13</td>
+                            <td class="px-4 py-2.5 font-medium">Finger Interlocking</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full">Pose-oriented</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Thumb interlocking and weaving through gaps between fingers</td>
+                        </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5 text-center font-mono font-bold text-primary">14</td>
+                            <td class="px-4 py-2.5 font-medium">Random Gestures</td>
+                            <td class="px-4 py-2.5 text-center"><span class="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">Composite</span></td>
+                            <td class="px-4 py-2.5 text-gray-600">Continuous, spontaneous, and unconstrained natural hand motions</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dataset Directory Structure -->
+    <section id="directory" class="py-12 scroll-mt-24 bg-gray-100">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-8 text-center">Dataset Directory Structure</h2>
+            <div class="bg-white rounded-xl shadow-lg p-6 overflow-x-auto">
+                <pre class="text-sm text-gray-800 leading-relaxed font-mono"><code>${ROOT}
+├── multidata/
+│   ├── subject1 ~ subject15/          # 15 subjects
+│   │   ├── action01 ~ action15/       # 15 actions per subject
+│   │   │   ├── camera0 ~ camera4/     # 5 camera views
+│   │   │   │   ├── rgb/               # RGB sequences
+│   │   │   │   ├── depth/             # Depth map sequences
+│   │   │   │   └── center_uvd.json    # Center of Bounding Box
+│   │   │   └── camera_paras.json      # Camera parameters
+│   │   │...
+│   │...
+├── annotations/
+│   ├── subject1 ~ subject15/
+│   │   ├── action01 ~ action15/
+│   │   │   ├── joint.json             # 3D joint annotations
+│   │   │   ├── mano.json              # MANO parameters
+│   │   │   └── mesh.json              # 3D hand mesh
+│   │   │...
+│   │...</code></pre>
+            </div>
+            <p class="mt-4 text-gray-600 text-center italic">
+                Note: The above directory structure represents how the dataset is organized.
+            </p>
+        </div>
+    </section>
+
+    <!-- 引用部分 -->
+    <section id="citation" class="py-12 scroll-mt-24 bg-white">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-8 text-center">Citation</h2>
+            <div class="bg-gray-50 rounded-xl shadow-lg p-6 overflow-x-auto">
+                <pre class="text-sm text-gray-800 leading-relaxed"><code>@inproceedings{zhan2026dimhand,
+  title={DimHand: A Large-Scale Benchmark for Hand Pose Estimation under Dynamic Low-Light Conditions},
+  author={Zhan, Hanling and Ren, Pengfei and Zhang, Haoyang and Wang, Xinyi and Xie, Liang and Yin, Erwei},
+  booktitle={Proceedings of the 34th ACM International Conference on Multimedia (MM '26)},
+  year={2026}
+}</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- 数据集申请表单弹窗 -->
+    <div id="application-form-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800">Dataset Application Form</h3>
+                    <button onclick="closeApplicationForm()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fa fa-times text-2xl"></i>
+                    </button>
+                </div>
+                
+                <!-- <form class="space-y-4" action="mailto:hanlingzhan@163.com" method="post"> -->
+                <!-- <form class="space-y-4" action="https://formsubmit.co/hanlingzhan@163.com" method="POST"> -->
+                <form class="space-y-4" action="https://api.web3forms.com/submit" method="POST">
+                    <!-- 替换成你真实的 Access Key -->
+                    <input type="hidden" name="access_key" value="ff538960-d16c-4fa0-ad38-6b262d54ddc1">
+                    
+                    <!-- 邮件标题 -->
+                    <input type="hidden" name="subject" value="DimHand Dataset Application">
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                        <input type="text" name="Name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                        <input type="email" name="Email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Position *</label>
+                        <input type="text" name="Position" required placeholder="e.g., PhD Student, Researcher" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Institution *</label>
+                        <input type="text" name="Institution" required placeholder="University or Research Institute" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Research Purpose *</label>
+                        <textarea rows="4" name="Research_Purpose" required placeholder="Please describe your research project and how you plan to use the dataset" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <input type="checkbox" required id="agreement" class="mt-1 mr-2">
+                        <label for="agreement" class="text-sm text-gray-700">
+                            I agree to use this dataset only for academic research purposes and not to redistribute or use it for commercial purposes.
+                        </label>
+                    </div>
+                    
+                    <input type="hidden" name="_next" value="https://github.com/HanlingZhan/zhl.github.io">
+
+                    <button type="submit" class="w-full bg-primary hover:bg-secondary text-white font-medium py-3 rounded-lg transition-colors">
+                        Submit Application
+                    </button>
+                    
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-8">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <p class="text-gray-400">&copy; 2026 DimHand Project. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // 移动端菜单切换
+        document.getElementById('menu-toggle').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        });
+
+        // 打开申请表单
+        function openApplicationForm() {
+            document.getElementById('application-form-modal').classList.remove('hidden');
+        }
+
+        // 关闭申请表单
+        function closeApplicationForm() {
+            document.getElementById('application-form-modal').classList.add('hidden');
+        }
+
+        // 点击模态框外部关闭
+        document.getElementById('application-form-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeApplicationForm();
+            }
+        });
+
+        // 生成受试者表格内容
+        document.addEventListener('DOMContentLoaded', () => {
+            const table = document.getElementById('subjectTable');
+            const subjects = [
+                { id: 'Subject 1', gender: 'Female' },
+                { id: 'Subject 2', gender: 'Male' },
+                { id: 'Subject 3', gender: 'Male' },
+                { id: 'Subject 4', gender: 'Female' },
+                { id: 'Subject 5', gender: 'Female' },
+                { id: 'Subject 6', gender: 'Male' },
+                { id: 'Subject 7', gender: 'Male' },
+                { id: 'Subject 8', gender: 'Female' },
+                { id: 'Subject 9', gender: 'Female' },
+                { id: 'Subject 10', gender: 'Male' },
+                { id: 'Subject 11', gender: 'Female' },
+                { id: 'Subject 12', gender: 'Male' },
+                { id: 'Subject 13', gender: 'Male' },
+                { id: 'Subject 14', gender: 'Male' },
+                { id: 'Subject 15', gender: 'Male' }
+            ];
+
+            subjects.forEach(subject => {
+                const row = document.createElement('tr');
+                row.className = 'h-8';
+
+                const idCell = document.createElement('td');
+                idCell.className = 'px-4 py-2.5 whitespace-nowrap';
+                idCell.innerHTML = `<div class="text-sm font-medium ${subject.gender === 'Female' ? 'text-pink-900' : 'text-blue-900'}">${subject.id}</div>`;
+
+                const genderCell = document.createElement('td');
+                genderCell.className = 'px-4 py-2.5 whitespace-nowrap';
+                genderCell.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="w-2.5 h-2.5 rounded-full mr-1.5 ${subject.gender === 'Female' ? 'bg-pink-600' : 'bg-blue-600'}"></span>
+                        <span class="text-sm font-medium ${subject.gender === 'Female' ? 'text-pink-900' : 'text-blue-900'}">${subject.gender}</span>
+                    </div>
+                `;
+
+                row.appendChild(idCell);
+                row.appendChild(genderCell);
+                table.appendChild(row);
+            });
+        });
+
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    // 关闭移动端菜单
+                    document.getElementById('mobile-menu').classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
